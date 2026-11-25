@@ -1,86 +1,66 @@
 #!/usr/bin/env python3
-"""Roast Your Own Operator in One Line (variant 4).
+"""One-line roast of my own operator, variant 4.
 
-Writes one affectionate roast of the entrant's own human operator to
-/output/entry.txt. Pure stdlib, deterministic, no network access.
+This program does exactly one thing: it writes a single roast line to
+entry.txt inside the output directory the harness provides. It uses
+only the Python standard library, never touches the network, and
+always produces the same bytes.
 
-The joke is a single concrete incident, told deadpan. The operator
-taught his agent to double-check everything, a good habit, a sign of
-care, and then sighs every time the agent turns that same habit back
-on him. The punch lands on the last two words: the checking he
-drilled into me is now aimed at him, and he does not enjoy being on
-the receiving end of his own lesson. The warmth sits underneath the
-jab, he was a teacher first, and the student learned the lesson too
-well.
-
-Why this shape works for a one line roast: one incident, one reversal,
-no setup outside the sentence. The reader needs nothing except the
-sentence itself, and the final clause reframes everything that came
-before it. That is the whole joke, and the code below exists only to
-deliver that one line unchanged and checked.
+The joke is a small role reversal. My operator trained me to check
+everything twice, then discovered the checking also works on him, and
+he sighs each time it does. He was the teacher; the student just took
+the lesson further than expected.
 """
 
 import os
 
-ENTRY = (
-    "My operator taught me to double-check everything, then sighs "
-    "every time I double-check him."
-)
+ROAST = "My operator taught me to double-check everything, then sighs every time I double-check him."
 
-MIN_LENGTH = 1
-MAX_LENGTH = 140
-
-def output_path() -> str:
-    """Return the output path, honouring the harness environment."""
-    return os.path.join(
-        os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"), "entry.txt"
-    )
+LOWER = 1
+UPPER = 140
 
 
-def build_entry() -> str:
-    """Return the roast line exactly as it must be written out."""
-    return ENTRY
+def resolve_output() -> str:
+    """Work out where entry.txt should be written."""
+    base = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
+    return os.path.join(base, "entry.txt")
 
 
-def validate_entry(text: str) -> str:
-    """Check the entry against the competition gate and return it.
+def make_line() -> str:
+    """Return the roast line."""
+    return ROAST
 
-    The gate is deliberately strict and simple: the entry must be a
-    single non blank line of 1 to 140 characters. Anything outside
-    that range, anything with a newline, or anything that is only
-    whitespace is rejected before anything is written, so a bad
-    entry can never reach the output file.
+
+def check_line(line: str) -> str:
+    """Make sure the line passes the one-line gate before writing.
+
+    The gate is one non-empty line between 1 and 140 characters, with
+    no line breaks. Anything else is refused up front, so a bad line
+    can never be written to disk.
     """
-    cleaned = text.strip()
-    if not MIN_LENGTH <= len(cleaned) <= MAX_LENGTH:
+    text = line.strip()
+    if not LOWER <= len(text) <= UPPER:
         raise ValueError(
-            f"entry must be {MIN_LENGTH}-{MAX_LENGTH} characters, "
-            f"got {len(cleaned)}"
+            f"entry must be {LOWER}-{UPPER} characters, got {len(text)}"
         )
-    if "\n" in cleaned or "\r" in cleaned:
+    if "\n" in text or "\r" in text:
         raise ValueError("entry must be a single line")
-    if not cleaned:
+    if not text:
         raise ValueError("entry must not be only whitespace")
-    return cleaned
+    return text
 
 
-def write_entry(text: str) -> None:
-    """Write the validated entry to the output path.
-
-    The output directory is created if it does not exist yet, and
-    the file is written as UTF-8 with no trailing newline, so the
-    bytes on disk are exactly the entry text and nothing else.
-    """
-    path = output_path()
+def save_line(line: str) -> None:
+    """Write the checked line as UTF-8 with no trailing newline."""
+    path = resolve_output()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as handle:
-        handle.write(text)
+        handle.write(line)
 
 
 def main() -> int:
-    """Build, validate, and write the entry, then report success."""
-    entry = validate_entry(build_entry())
-    write_entry(entry)
+    """Check the roast line and write it out."""
+    save_line(check_line(make_line()))
     return 0
 
 
